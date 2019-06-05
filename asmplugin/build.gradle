@@ -1,0 +1,55 @@
+apply plugin: 'groovy'
+apply plugin: 'java'
+apply plugin: 'maven'
+
+
+sourceSets {
+    main {
+        groovy {
+            srcDirs += 'src/main/groovy'
+        }
+
+        java {
+            srcDirs += "src/main/java"
+        }
+
+        resources {
+            srcDirs += 'src/main/resources'
+        }
+    }
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        repository(url: "file:///home/jianglei/maven")
+        pom.groupId = "com.jianglei"
+        pom.artifactId = "asm-plugin"
+        pom.version =1.0
+    }
+}
+buildscript {
+
+    repositories {
+        mavenLocal()
+        google()
+        jcenter()
+
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.4.1'
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation gradleApi()
+    implementation localGroovy()
+
+    implementation "commons-io:commons-io:2.4"
+    implementation 'commons-codec:commons-codec:1.10'
+    implementation group: 'org.ow2.asm', name: 'asm', version: '6.0'
+    implementation group:'org.ow2.asm', name: 'asm-commons', version: '6.0'
+    implementation 'com.android.tools.build:gradle:3.4.1'
+}
+//sourceCompatibility = "7"
+//targetCompatibility = "7"

@@ -1,1 +1,1 @@
-include ':app', ':asmplugin', ':testlibrary'
+include ':app', ':asmplugin', ':testlibrary', ':secondlibrary'

@@ -11,5 +11,8 @@ class LogUtils {
     def static i(String s) {
         logger.warn(s)
     }
+    def static e(String s){
+        logger.error(s)
+    }
 
 }

@@ -27,6 +27,8 @@ class MethodTraceTransform extends Transform {
 
     @Override
     Set<? super QualifiedContent.Scope> getScopes() {
+        //此次是只允许在主module（build.gradle中含有com.android.application插件）
+        //所以我们需要修改所有的module
         return TransformManager.SCOPE_FULL_PROJECT
     }
 

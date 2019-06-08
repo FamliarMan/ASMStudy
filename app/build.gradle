@@ -1,21 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.jianglei.method-tracer'
 
-
-buildscript {
-
-    repositories {
-        google()
-        jcenter()
-        maven {
-            url 'file:///home/jianglei/maven'
-        }
-
-    }
-    dependencies {
-        classpath 'com.jianglei:asm-plugin:1.0'
-    }
-}
 android {
     compileSdkVersion 28
     defaultConfig {

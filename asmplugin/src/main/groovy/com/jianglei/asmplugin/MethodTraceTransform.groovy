@@ -43,7 +43,7 @@ class MethodTraceTransform extends Transform {
         //保存上次依赖jar文件和输出的jar文件的依赖关系，比如上次编译时gson被输出成32.jar
         def lastConfigFile = new File(transformInvocation.context.temporaryDir.absolutePath + "config.json")
         //用来保存jar文件的名称和输出路径的映射
-        def jarMap = new HashMap<String, String>()
+        def lastJarMap = new HashMap<String, String>()
         //此次是否是增量编译
         def isIncrement = false
         if (lastConfigFile.exists()) {
@@ -53,12 +53,14 @@ class MethodTraceTransform extends Transform {
                 throw IllegalStateException("bad config file ,please clean the project and rebuild it")
             }
             def json = lines.get(0)
-            jarMap = gson.fromJson(json, HashMap.class)
+            lastJarMap = gson.fromJson(json, HashMap.class)
         } else {
             isIncrement = false
         }
         //所有有用的jar文件路径保存，用来删除多余的jar
         def jarFiles = new HashSet<String>()
+        //此次编译参与的所有jar，记录下来和上次参与的jar对比，删掉多余的文件
+        def curJars = new HashSet<String>()
         def jaroutDir = ""
         transformInvocation.inputs
                 .each { input ->
@@ -100,7 +102,6 @@ class MethodTraceTransform extends Transform {
                             if (!outputFile.parentFile.exists()) {
                                 outputFile.parentFile.mkdirs()
                             }
-                            LogUtils.i("dir first:" + outputFullPath)
                             MethodTraceUtils.traceFile(file, outputFile)
                         }
                     }
@@ -115,45 +116,48 @@ class MethodTraceTransform extends Transform {
                 )
                 if (!isIncrement) {
                     //第一次编译，记录名称和路径的映射关系
-                    jarMap.put(jarInput.name, outputFile.absolutePath)
+                    lastJarMap.put(jarInput.name, outputFile.absolutePath)
+                    LogUtils.i(jarInput.name+" "+outputFile.absolutePath)
                 }
                 jaroutDir = outputFile.absolutePath
                 jarFiles.add(outputFile.absolutePath)
-                LogUtils.i("get jar:" + outputFile.absolutePath + "  " + jarInput.name)
                 if (jarInput.status == Status.ADDED || jarInput.status == Status.CHANGED) {
                     MethodTraceUtils.traceJar(jarInput.file, outputFile)
-                    if (isIncrement) {
-                        //增量编译，更新对应关系
-                        jarMap.put(jarInput.name, jaroutDir)
-                    }
-                    LogUtils.i("jar changed: " + outputFile.absolutePath)
-
+                    lastJarMap.put(jarInput.name, jaroutDir)
+                    LogUtils.i("jar changed: " + outputFile.absolutePath+ " "+jarInput.status)
+                    curJars.add(jarInput.name)
                 } else if (jarInput.status == Status.NOTCHANGED) {
                     if (!isIncrement) {
                         //第一次或者clean后的编译,这里要插入字节码操作代码,这里暂时直接复制过去
                         MethodTraceUtils.traceJar(jarInput.file, outputFile)
                     } else {
-                        //什么都不用做
+                        curJars.add(jarInput.name)
                     }
                 } else {
-                    //Status.REMOVED,其实一般删除一个jar，实测并不会传入进来,所以这里什么都不做
+                    //Status.REMOVED,其实一般删除一个jar，实测并不会传入进来,所以shen
+                    LogUtils.i("jar deleted:"+jarInput.name+"  ")
                 }
             }
+        }
 
-            LogUtils.i("get jar:---------------------------------------")
+        if(isIncrement){
+
+            //依赖有改变后，比如删除了某个依赖，假如该依赖之前生成的是32.jar,由于
+            //删除某个依赖后我们这里是收不到通知的，所以这个32.jar在增量构建时依然存在，
+            //下次我们将这个依赖重新加回来，可能会生成34.jar,这个时候32.jar和34.jar其实
+            //内容一模一样，编译时会报类冲突，所以这里我们坐下检查，删除多余的jar文件
+            def iterator = lastJarMap.entrySet().iterator()
+            while(iterator.hasNext()){
+                def entry = iterator.next()
+                if(!curJars.contains(entry.key)){
+                    iterator.remove()
+                    new File(entry.value).delete()
+                    LogUtils.i("delete jar:"+entry.key+" "+entry.value)
+                }
+            }
         }
         //将映射关系写入到文件，下次使用
-        def lines = Arrays.asList(gson.toJson(jarMap))
+        def lines = Arrays.asList(gson.toJson(lastJarMap))
         FileUtils.writeLines(lastConfigFile, lines)
-        //依赖有改变后，比如删除了某个依赖，假如该依赖之前生成的是32.jar,由于
-        //删除某个依赖后我们这里是收不到通知的，所以这个32.jar在增量构建时依然存在，
-        //下次我们将这个依赖重新加回来，可能会生成34.jar,这个时候32.jar和34.jar其实
-        //内容一模一样，编译时会报类冲突，所以这里我们坐下检查，删除多余的jar文件
-        if (isIncrement) {
-            jarMap.each {
-                jarFiles.add(it.value)
-            }
-            DirectoryUtils.deleteReduantJar(jaroutDir, jarFiles)
-        }
     }
 }

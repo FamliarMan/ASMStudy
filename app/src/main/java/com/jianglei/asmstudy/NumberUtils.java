@@ -1,4 +1,4 @@
 package com.jianglei.asmstudy;
 
-public class TestUtils {
+public class NumberUtils {
 }

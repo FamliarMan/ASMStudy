@@ -9,9 +9,11 @@ import org.gradle.api.Project
 class MethodTraceTransform extends Transform {
 
     private Project project
+    private boolean isForApplication
 
-    MethodTraceTransform(Project project) {
+    MethodTraceTransform(Project project, boolean isForApplication) {
         this.project = project
+        this.isForApplication = isForApplication
     }
 
     @Override
@@ -27,9 +29,15 @@ class MethodTraceTransform extends Transform {
 
     @Override
     Set<? super QualifiedContent.Scope> getScopes() {
-        //此次是只允许在主module（build.gradle中含有com.android.application插件）
-        //所以我们需要修改所有的module
-        return TransformManager.SCOPE_FULL_PROJECT
+        //此次我们允许在所有的module中集成插件，所以每次只需要处理自己模块的代码和第三方依赖即可
+        def scopes = new HashSet()
+        scopes.add(QualifiedContent.Scope.PROJECT)
+        scopes.add(QualifiedContent.Scope.PROJECT)
+        if (isForApplication) {
+            //application module中加入此项可以处理第三方jar包
+            scopes.add(QualifiedContent.Scope.EXTERNAL_LIBRARIES)
+        }
+        return scopes
     }
 
     @Override
@@ -43,7 +51,7 @@ class MethodTraceTransform extends Transform {
 
         def gson = new Gson()
         //保存上次依赖jar文件和输出的jar文件的依赖关系，比如上次编译时gson被输出成32.jar
-        def lastConfigFile = new File(transformInvocation.context.temporaryDir.absolutePath + "config.json")
+        def lastConfigFile = new File(transformInvocation.context.temporaryDir.absolutePath + File.separator + "config.json")
         //用来保存jar文件的名称和输出路径的映射
         def lastJarMap = new HashMap<String, String>()
         //此次是否是增量编译
@@ -119,14 +127,14 @@ class MethodTraceTransform extends Transform {
                 if (!isIncrement) {
                     //第一次编译，记录名称和路径的映射关系
                     lastJarMap.put(jarInput.name, outputFile.absolutePath)
-                    LogUtils.i(jarInput.name+" "+outputFile.absolutePath)
+                    LogUtils.i(jarInput.name + " " + outputFile.absolutePath)
                 }
                 jaroutDir = outputFile.absolutePath
                 jarFiles.add(outputFile.absolutePath)
                 if (jarInput.status == Status.ADDED || jarInput.status == Status.CHANGED) {
                     MethodTraceUtils.traceJar(jarInput.file, outputFile)
                     lastJarMap.put(jarInput.name, jaroutDir)
-                    LogUtils.i("jar changed: " + outputFile.absolutePath+ " "+jarInput.status)
+                    LogUtils.i("jar changed: " + outputFile.absolutePath + " " + jarInput.status)
                     curJars.add(jarInput.name)
                 } else if (jarInput.status == Status.NOTCHANGED) {
                     if (!isIncrement) {
@@ -137,24 +145,24 @@ class MethodTraceTransform extends Transform {
                     }
                 } else {
                     //Status.REMOVED,其实一般删除一个jar，实测并不会传入进来,所以shen
-                    LogUtils.i("jar deleted:"+jarInput.name+"  ")
+                    LogUtils.i("jar deleted:" + jarInput.name + "  ")
                 }
             }
         }
 
-        if(isIncrement){
+        if (isIncrement) {
 
             //依赖有改变后，比如删除了某个依赖，假如该依赖之前生成的是32.jar,由于
             //删除某个依赖后我们这里是收不到通知的，所以这个32.jar在增量构建时依然存在，
             //下次我们将这个依赖重新加回来，可能会生成34.jar,这个时候32.jar和34.jar其实
             //内容一模一样，编译时会报类冲突，所以这里我们坐下检查，删除多余的jar文件
             def iterator = lastJarMap.entrySet().iterator()
-            while(iterator.hasNext()){
+            while (iterator.hasNext()) {
                 def entry = iterator.next()
-                if(!curJars.contains(entry.key)){
+                if (!curJars.contains(entry.key)) {
                     iterator.remove()
                     new File(entry.value).delete()
-                    LogUtils.i("delete jar:"+entry.key+" "+entry.value)
+                    LogUtils.i("delete jar:" + entry.key + " " + entry.value)
                 }
             }
         }

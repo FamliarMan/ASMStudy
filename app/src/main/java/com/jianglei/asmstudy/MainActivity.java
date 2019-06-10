@@ -4,6 +4,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.jianglei.testlibrary.CustomThread;
 import com.jianglei.testlibrary.TestUtils;
 
 public class MainActivity extends AppCompatActivity {
@@ -14,5 +15,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         int i=10;
         TestUtils.test();
+        new Thread().run();
+        new Thread().run();
     }
 }

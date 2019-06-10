@@ -1,5 +1,6 @@
 package com.jianglei.asmplugin
 
+import jdk.nashorn.internal.runtime.regexp.joni.constants.OPCode
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Type
@@ -39,7 +40,25 @@ public class TraceMethodVisitor extends AdviceAdapter {
     }
 
     @Override
+    void visitTypeInsn(int opcode, String type) {
+        if (opcode == NEW && type == "java/lang/Thread") {
+            //将原来的new Thread换成 new CustomThread
+            mv.visitTypeInsn(NEW, "com/jianglei/testlibrary/CustomThread")
+        } else {
+            super.visitTypeInsn(opcode, type)
+        }
+    }
+
+    @Override
     void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
+        //将所有对Thread的方法调用替换成对CustomThread方法的调用
+        if(className != "com/jianglei/testlibrary/CustomThread"
+            && opcode == INVOKESPECIAL && owner == "java/lang/Thread" ){
+            //CustomThread本身的方法不需要修改
+            mv.visitMethodInsn(INVOKESPECIAL,"com/jianglei/testlibrary/CustomThread",name,desc,itf)
+            LogUtils.i(String.format("replace thread :%s:%s:%s",className,methodName,name))
+            return
+        }
         super.visitMethodInsn(opcode, owner, name, desc, itf)
     }
 
@@ -72,7 +91,7 @@ public class TraceMethodVisitor extends AdviceAdapter {
         mv.visitTypeInsn(NEW, "java/lang/StringBuilder")
         mv.visitInsn(DUP)
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false)
-        mv.visitLdcInsn(className+" : ")
+        mv.visitLdcInsn(className + " : ")
         mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false)
         mv.visitLdcInsn(methodName + ": ")
         mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false)

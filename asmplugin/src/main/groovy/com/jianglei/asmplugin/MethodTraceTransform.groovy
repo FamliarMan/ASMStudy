@@ -94,7 +94,6 @@ class MethodTraceTransform extends Transform {
                         if ((changeFile.value == Status.CHANGED || changeFile.value == Status.ADDED)
                                 && !changeFile.key.isDirectory()) {
                             //有时候新增一个module，该module目录会传进来，对于该目录我们无需处理
-                            LogUtils.i("dir change files:" + changeFile.key.absolutePath + "  " + changeFile.value.toString())
                             MethodTraceUtils.traceFile(changeFile.key, outputFile)
                         } else if (changeFile.value == Status.REMOVED) {
                             outputFile.delete()
@@ -127,14 +126,12 @@ class MethodTraceTransform extends Transform {
                 if (!isIncrement) {
                     //第一次编译，记录名称和路径的映射关系
                     lastJarMap.put(jarInput.name, outputFile.absolutePath)
-                    LogUtils.i(jarInput.name + " " + outputFile.absolutePath)
                 }
                 jaroutDir = outputFile.absolutePath
                 jarFiles.add(outputFile.absolutePath)
                 if (jarInput.status == Status.ADDED || jarInput.status == Status.CHANGED) {
                     MethodTraceUtils.traceJar(jarInput.file, outputFile)
                     lastJarMap.put(jarInput.name, jaroutDir)
-                    LogUtils.i("jar changed: " + outputFile.absolutePath + " " + jarInput.status)
                     curJars.add(jarInput.name)
                 } else if (jarInput.status == Status.NOTCHANGED) {
                     if (!isIncrement) {
@@ -145,7 +142,6 @@ class MethodTraceTransform extends Transform {
                     }
                 } else {
                     //Status.REMOVED,其实一般删除一个jar，实测并不会传入进来,所以shen
-                    LogUtils.i("jar deleted:" + jarInput.name + "  ")
                 }
             }
         }
@@ -162,7 +158,6 @@ class MethodTraceTransform extends Transform {
                 if (!curJars.contains(entry.key)) {
                     iterator.remove()
                     new File(entry.value).delete()
-                    LogUtils.i("delete jar:" + entry.key + " " + entry.value)
                 }
             }
         }

@@ -32,11 +32,14 @@ public class TraceMethodVisitor extends AdviceAdapter {
 
     private String className
     private String methodName
+    //某个方法是否需要追踪
+    private boolean isNeedTraceMethod
 
     protected TraceMethodVisitor(int api, MethodVisitor mv, int access, String name, String desc, String className) {
         super(api, mv, access, name, desc)
         this.className = className
         this.methodName = name
+        isNeedTraceMethod = !(name == "<init>" || name == "<clinit>")
     }
 
     @Override
@@ -52,11 +55,11 @@ public class TraceMethodVisitor extends AdviceAdapter {
     @Override
     void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
         //将所有对Thread的方法调用替换成对CustomThread方法的调用
-        if(className != "com/jianglei/testlibrary/CustomThread"
-            && opcode == INVOKESPECIAL && owner == "java/lang/Thread" ){
+        if (className != "com/jianglei/testlibrary/CustomThread"
+                && opcode == INVOKESPECIAL && owner == "java/lang/Thread") {
             //CustomThread本身的方法不需要修改
-            mv.visitMethodInsn(INVOKESPECIAL,"com/jianglei/testlibrary/CustomThread",name,desc,itf)
-            LogUtils.i(String.format("replace thread :%s:%s:%s",className,methodName,name))
+            mv.visitMethodInsn(INVOKESPECIAL, "com/jianglei/testlibrary/CustomThread", name, desc, itf)
+            LogUtils.i(String.format("replace thread :%s:%s:%s", className, methodName, name))
             return
         }
         super.visitMethodInsn(opcode, owner, name, desc, itf)
@@ -66,6 +69,10 @@ public class TraceMethodVisitor extends AdviceAdapter {
 
     @Override
     protected void onMethodEnter() {
+        if (!isNeedTraceMethod) {
+            super.onMethodEnter()
+            return
+        }
         LogUtils.i(" insert method:" + className + " : " + methodName)
         super.onMethodEnter()
         timeLocalIndex = newLocal(Type.LONG_TYPE)
@@ -76,7 +83,9 @@ public class TraceMethodVisitor extends AdviceAdapter {
 
     @Override
     protected void onMethodExit(int opcode) {
-        super.onMethodExit(opcode)
+        if (!isNeedTraceMethod) {
+            return
+        }
         mv.visitMethodInsn(INVOKESTATIC, "java/lang/System", "currentTimeMillis", "()J", false);
         //将方法进入是的记录的时间入栈
         mv.visitVarInsn(LLOAD, timeLocalIndex)

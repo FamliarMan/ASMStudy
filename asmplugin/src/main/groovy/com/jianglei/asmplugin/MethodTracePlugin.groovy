@@ -10,6 +10,8 @@ class MethodTracePlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
 
+         project.getExtensions()
+                .create("methodTrace", MethodTraceExtension.class)
         //确保只能在含有application的build.gradle文件中引入
         if (!project.plugins.hasPlugin('com.android.application')) {
             throw new GradleException('Android Application plugin required')

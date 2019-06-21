@@ -54,6 +54,7 @@ public class TraceMethodVisitor extends AdviceAdapter {
 
     @Override
     void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
+        LogUtils.i("method:"+desc)
         //将所有对Thread的方法调用替换成对CustomThread方法的调用
         if (className != "com/jianglei/testlibrary/CustomThread"
                 && opcode == INVOKESPECIAL && owner == "java/lang/Thread") {

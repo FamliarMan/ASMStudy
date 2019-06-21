@@ -72,14 +72,14 @@ class DirectoryUtils {
     }
 
     /**
-     * 删除某个路径的同级所有的jar文件
-     * @param path 当前路径
+     * 删除某个目录下的所有jar文件
+     * @param path 目录地址
      */
     static void deleteAllJars(String path) {
         if (path == null) {
             return
         }
-        def files = new File(path).parentFile.listFiles()
+        def files = new File(path).listFiles()
         if (files == null) {
             return
         }
@@ -106,7 +106,7 @@ class DirectoryUtils {
         for (File f : files) {
             if (!validFiles.contains(f.absolutePath) && f.absolutePath.endsWith(".jar")) {
                 f.delete()
-                LogUtils.i("delete jar:"+f.absolutePath)
+                LogUtils.i("delete jar:" + f.absolutePath)
             }
         }
     }

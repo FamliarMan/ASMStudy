@@ -30,7 +30,6 @@ class MethodTraceTransform extends Transform {
 
     @Override
     Set<? super QualifiedContent.Scope> getScopes() {
-        //此次我们允许在所有的module中集成插件，所以每次只需要处理自己模块的代码和第三方依赖即可
         def scopes = new HashSet()
         scopes.add(QualifiedContent.Scope.PROJECT)
         if (isForApplication) {
@@ -42,7 +41,7 @@ class MethodTraceTransform extends Transform {
 
     @Override
     boolean isIncremental() {
-        return true
+        return false
     }
 
     @Override

@@ -2,7 +2,6 @@ package com.jianglei.asmplugin
 
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.LibraryExtension
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -11,6 +10,8 @@ class MethodTracePlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
 
+        project.getExtensions()
+                .create("methodTrace", MethodTraceExtension.class)
         def extension = project.getExtensions().findByType(AppExtension.class)
         def isForApplication = true
         if (extension == null) {

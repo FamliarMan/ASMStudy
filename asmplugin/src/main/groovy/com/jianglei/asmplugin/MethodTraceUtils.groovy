@@ -1,7 +1,8 @@
 package com.jianglei.asmplugin
 
-
+import com.android.build.api.transform.JarInput
 import org.apache.commons.io.FileUtils
+import com.android.build.api.transform.JarInput
 
 class MethodTraceUtils {
 
@@ -23,8 +24,9 @@ class MethodTraceUtils {
         }
     }
 
-    public static void traceJar(File jar, File outputFile) {
+    public static void traceJar(JarInput jarInput, File outputFile) {
 
+        def jar = jarInput.file
         //jar包解压的临时位置
         def tmpDir = outputFile.parentFile.absolutePath + File.separator + outputFile
                 .name.replace(".jar", File.separator)
@@ -45,7 +47,7 @@ class MethodTraceUtils {
                 tracedFile.renameTo(it)
             }
         }
-        MyZipUtils.zip(tmpFile.absolutePath,outputFile.absolutePath)
+        MyZipUtils.zip(tmpFile.absolutePath, outputFile.absolutePath)
         tmpFile.deleteDir()
 
 
